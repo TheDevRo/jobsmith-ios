@@ -2,7 +2,7 @@
 
 A **fully standalone** native iOS version of Jobsmith: the entire pipeline —
 fetch, score, tailor, review, apply — runs on the phone. No FastAPI server,
-no Playwright, no Docker. This is the iOS app: it lives in `ios-standalone/`.
+no Playwright, no Docker. The desktop and Docker app lives in [TheDevRo/Jobsmith](https://github.com/TheDevRo/Jobsmith); the two sync through a shared folder.
 
 The only thing that still lives off-device is the LLM itself: point the app
 at any OpenAI-compatible endpoint (LM Studio over LAN/Tailscale, Ollama,
@@ -25,7 +25,7 @@ Apple's on-device foundation model for the lighter tasks.
 ## Layout
 
 ```
-ios-standalone/
+jobsmith-ios/
 ├── project.yml                  # xcodegen spec (app + share ext + tests); also the
 │                                #   source of truth for App/Info.plist (generated)
 ├── JobsmithKit/                 # Swift package — the whole engine
@@ -52,9 +52,9 @@ ios-standalone/
 ```
 
 **There is no Safari Web Extension.** Apply Assist runs entirely in-process: the
-Apply browser injects `snapshot.js`/`fill.js` (copied from `extension/src/common`)
+Apply browser injects `snapshot.js`/`fill.js` (copied from Jobsmith's `extension/src/common`, see [contract/VENDOR.md](contract/VENDOR.md))
 into its own WKWebView and calls `NativeMessageRouter` directly. That type keeps
-its name — and the `{name, body}` message shapes of `backend/extension_api.py` —
+its name — and the `{name, body}` message shapes of Jobsmith's `backend/extension_api.py` —
 because it is the same contract the desktop browser extension speaks, but nothing
 crosses a process boundary.
 
@@ -66,7 +66,6 @@ on the simulator via the `JobsmithKit` scheme.
 
 ```bash
 brew install xcodegen            # once
-cd ios-standalone
 xcodegen generate
 open JobsmithStandalone.xcodeproj
 ```
@@ -94,9 +93,8 @@ and carries no credentials — copy the committed template and supply the App St
 Connect identifiers through the environment:
 
 ```bash
-cp ios-standalone/scripts/testflight-upload.sh.example \
-   ios-standalone/scripts/testflight-upload.sh
-chmod +x ios-standalone/scripts/testflight-upload.sh
+cp scripts/testflight-upload.sh.example scripts/testflight-upload.sh
+chmod +x scripts/testflight-upload.sh
 ```
 
 | Variable | Required | Meaning |
@@ -112,7 +110,7 @@ the repo and is never committed.
 
 ```bash
 export ASC_KEY_ID=... ASC_ISSUER_ID=... TEAM_ID=...
-cd ios-standalone && ./scripts/testflight-upload.sh
+./scripts/testflight-upload.sh
 ```
 
 ## Where secrets live

@@ -6,13 +6,13 @@ import XCTest
 /// vector, and satisfy read-order/idempotency invariants.
 final class SyncConformanceTests: XCTestCase {
 
-    /// Repo-root vendored vectors (shared with the Python conformance test).
-    /// #filePath is ios-standalone/KitTests/<this file>, so three pops reach the
-    /// repo root.
+    /// Vendored sync vectors (shared with the desktop's Python conformance test,
+    /// see contract/VENDOR.md). #filePath is KitTests/<this file>, so two pops
+    /// reach the repo root.
     private var vectorsDir: URL {
         var url = URL(fileURLWithPath: #filePath)
-        for _ in 0..<3 { url.deleteLastPathComponent() }  // -> repo root
-        return url.appendingPathComponent("backend/sync/test-vectors")
+        for _ in 0..<2 { url.deleteLastPathComponent() }  // -> repo root
+        return url.appendingPathComponent("contract/sync-test-vectors")
     }
 
     private func vectorFolders() -> [URL] {

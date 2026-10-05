@@ -9,11 +9,11 @@ final class SetupAssistantTests: XCTestCase {
 
     // MARK: Presets
 
-    /// #filePath is ios-standalone/KitTests/<this file>: three pops reach the repo root.
+    /// #filePath is KitTests/<this file>: two pops reach the repo root.
     private var desktopProvidersJSON: URL {
         var url = URL(fileURLWithPath: #filePath)
-        for _ in 0..<3 { url.deleteLastPathComponent() }
-        return url.appendingPathComponent("backend/ai_providers.json")
+        for _ in 0..<2 { url.deleteLastPathComponent() }
+        return url.appendingPathComponent("contract/ai_providers.json")
     }
 
     func testPresetsMatchDesktop() throws {

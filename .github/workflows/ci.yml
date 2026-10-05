@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Daily, so drift from a Jobsmith change shows up even when this repo is idle.
+  schedule:
+    - cron: "17 13 * * *"
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Contract matches Jobsmith
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: scripts/check_contract.sh
+
+  test:
+    name: iOS (xcodebuild)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install xcodegen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Test JobsmithKit
+        run: |
+          DEST=$(xcrun simctl list devices available \
+            | grep -m1 -o 'iPhone [0-9]\+' || echo 'iPhone 16')
+          xcodebuild -scheme JobsmithKit \
+            -destination "platform=iOS Simulator,name=$DEST" \
+            test CODE_SIGNING_ALLOWED=NO | xcpretty || exit 1

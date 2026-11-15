@@ -17,7 +17,16 @@ else
   trap 'rm -rf "$up"' EXIT
   git clone -q --depth 1 --branch "$ref" --filter=blob:none --sparse \
     https://github.com/TheDevRo/Jobsmith "$up"
-  git -C "$up" sparse-checkout set --no-cone /backend/sync/test-vectors/ /backend/ai_providers.json /extension/src/common/ /tests/fixtures/triage_golden.json /tests/fixtures/nli_line_premises.json
+  git -C "$up" sparse-checkout set --no-cone /backend/sync/test-vectors/ /backend/ai_providers.json /extension/src/common/ \
+    /tests/fixtures/triage_golden.json /tests/fixtures/nli_line_premises.json \
+    /ios-standalone/KitTests/Fixtures/triage_golden.json /ios-standalone/KitTests/Fixtures/nli_line_premises.json
+fi
+
+# The test fixtures live in Jobsmith's ios-standalone/KitTests/Fixtures/ until
+# Jobsmith PR #24 moves them to tests/fixtures/. Check whichever exists.
+fixtures="tests/fixtures"
+if [ ! -f "$up/$fixtures/triage_golden.json" ] && [ -f "$up/ios-standalone/KitTests/Fixtures/triage_golden.json" ]; then
+  fixtures="ios-standalone/KitTests/Fixtures"
 fi
 
 status=0
@@ -29,8 +38,8 @@ if ! diff -r "$root/contract/sync-test-vectors" "$up/backend/sync/test-vectors" 
   status=1
 fi
 for pair in "contract/ai_providers.json:backend/ai_providers.json" \
-            "KitTests/Fixtures/triage_golden.json:tests/fixtures/triage_golden.json" \
-            "KitTests/Fixtures/nli_line_premises.json:tests/fixtures/nli_line_premises.json"; do
+            "KitTests/Fixtures/triage_golden.json:$fixtures/triage_golden.json" \
+            "KitTests/Fixtures/nli_line_premises.json:$fixtures/nli_line_premises.json"; do
   here="${pair%%:*}" there="${pair#*:}"
   if ! cmp -s "$root/$here" "$up/$there"; then
     echo "DRIFT: $here differs from Jobsmith $there" >&2

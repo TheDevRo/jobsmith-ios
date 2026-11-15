@@ -15,6 +15,10 @@ Copied from `TheDevRo/Jobsmith` @ `14c7046`:
 | `KitTests/Fixtures/triage_golden.json` | `tests/fixtures/triage_golden.json` | `QuickMatchTests.swift` |
 | `KitTests/Fixtures/nli_line_premises.json` | `tests/fixtures/nli_line_premises.json` (written by `tests/test_nli_beta.py`) | `LocalNLITests.swift` |
 
+The two fixtures move to `tests/fixtures/` when Jobsmith PR #24 lands. Until
+then they live in Jobsmith's `ios-standalone/KitTests/Fixtures/`, and
+`check_contract.sh` compares against whichever location exists.
+
 `scripts/check_contract.sh` fails when any copy drifts from Jobsmith `main`. CI
 runs it on every push and once a day, so an upstream change shows up here even
 when nobody touches this repo.

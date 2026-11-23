@@ -1,0 +1,18 @@
+# Weekly dependency update PRs, one batch per ecosystem.
+version: 2
+updates:
+  - package-ecosystem: swift
+    directory: /JobsmithKit
+    schedule:
+      interval: weekly
+    groups:
+      swift-deps:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]

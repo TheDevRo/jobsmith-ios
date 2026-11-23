@@ -24,7 +24,7 @@ public struct NativeMessageRouter: Sendable {
     /// - Parameters:
     ///   - config: AppConfig provider (e.g. `{ await ConfigStore.shared.load() }`).
     ///   - activeJobStore: injectable for tests; defaults to the App Group file.
-    ///   - readDocument: injectable document loader; defaults to FileVault DOCX.
+    ///   - readDocument: injectable document loader; defaults to the vault (configured format first).
     public init(db: AppDatabase,
                 engine: any AIEngine,
                 config: @escaping @Sendable () async -> AppConfig,
@@ -64,9 +64,9 @@ public struct NativeMessageRouter: Sendable {
             case "getJob":
                 return ok(try getJob(body))
             case "getResumeFile":
-                return ok(try fileFor(body, kind: .resume))
+                return ok(try await fileFor(body, kind: .resume))
             case "getCoverFile":
-                return ok(try fileFor(body, kind: .coverLetter))
+                return ok(try await fileFor(body, kind: .coverLetter))
             case "scan":
                 return ok(try await scan(body))
             case "getActiveJob":
@@ -143,18 +143,36 @@ public struct NativeMessageRouter: Sendable {
         ]
     }
 
-    private func fileFor(_ body: [String: Any], kind: FileVault.Kind) throws -> [String: Any] {
+    private func fileFor(_ body: [String: Any], kind: FileVault.Kind) async throws -> [String: Any] {
         let jobId = try requireString(body, "jobId", "job_id")
-        let read = readDocument ?? { FileVault.read(jobId: $0, kind: $1, format: .docx) }
-        guard let data = read(jobId, kind) else {
+        let preferred = await loadConfig().honesty.documentFormat
+        let data: Data?
+        if let readDocument {
+            data = readDocument(jobId, kind)
+        } else {
+            // The vault holds whatever format the job was tailored under; if
+            // the setting changed since, hand over the other one.
+            let other: FileVault.Format = preferred == .pdf ? .docx : .pdf
+            data = FileVault.read(jobId: jobId, kind: kind, format: preferred)
+                ?? FileVault.read(jobId: jobId, kind: kind, format: other)
+        }
+        guard let data else {
             let what = kind == .resume ? "Resume" : "Cover letter"
             throw RouterError(message: "\(what) not found — tailor the job first", status: 404)
         }
+        // Name and type the file from its bytes, not from the setting: the page
+        // gets what is actually stored.
+        let format = Self.documentFormat(of: data)
         return [
-            "filename": "\(jobId)_\(kind.rawValue).docx",
+            "filename": "\(jobId)_\(kind.rawValue).\(format.rawValue)",
             "base64": data.base64EncodedString(),
-            "mime": FileVault.Format.docx.mime,
+            "mime": format.mime,
         ]
+    }
+
+    /// PDF files start with "%PDF"; everything else the vault stores is DOCX.
+    static func documentFormat(of data: Data) -> FileVault.Format {
+        data.starts(with: Array("%PDF".utf8)) ? .pdf : .docx
     }
 
     private func scan(_ body: [String: Any]) async throws -> [String: Any] {

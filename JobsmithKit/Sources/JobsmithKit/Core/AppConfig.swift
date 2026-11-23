@@ -544,7 +544,10 @@ public struct HonestyConfig: Codable, Equatable, Sendable {
         ) ?? .default
         maxResumeExperienceEntries = try c.decodeIfPresent(Int.self, forKey: .maxResumeExperienceEntries)
         aiEditTier = try c.decodeIfPresent(ModelTier.self, forKey: .aiEditTier) ?? .strong
-        documentFormat = try c.decodeIfPresent(FileVault.Format.self, forKey: .documentFormat) ?? .pdf
+        // Mirrors the desktop `_document_format`: PDF unless "docx" is saved
+        // explicitly (any case); unset or unrecognised values mean PDF.
+        let rawFormat = try? c.decodeIfPresent(String.self, forKey: .documentFormat)
+        documentFormat = rawFormat?.lowercased() == "docx" ? .docx : .pdf
     }
 }
 

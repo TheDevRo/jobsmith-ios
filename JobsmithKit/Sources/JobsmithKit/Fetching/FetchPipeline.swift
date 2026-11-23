@@ -149,7 +149,9 @@ public actor FetchPipeline {
         // manual, scheduled, resumed, or driven by a stale run record — and an
         // empty `requested` means "everything", so filtering it there would
         // widen the run instead of narrowing it.
-        let ids = SourceRegistry.allIDs.filter {
+        // Portals are opt-in, so "everything" means the built-ins plus the
+        // portals switched on here.
+        let ids = (SourceRegistry.allIDs + SourceRegistry.enabledPortalIDs(for: config)).filter {
             (requested.isEmpty || requested.contains($0))
                 && SourceRegistry.isAvailable($0, config: config)
         }

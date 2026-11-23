@@ -19,6 +19,11 @@ let package = Package(
                 .product(name: "GRDB", package: "GRDB.swift"),
                 "SwiftSoup",
                 "ZIPFoundation",
+            ],
+            resources: [
+                // The bundled job portal definitions (docs/portals.md on the desktop),
+                // byte-identical to the desktop's backend/job_sources/portals/.
+                .copy("Resources/portals"),
             ]
         ),
         // No SPM test target on purpose: the Kit links UIKit-dependent code, so

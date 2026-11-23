@@ -91,6 +91,12 @@ public struct SearchConfig: Codable, Equatable, Sendable {
     /// a policy question, not a preference: turning it off here takes it out of
     /// the sources list and out of every fetch, foreground or background.
     public var linkedInEnabled: Bool
+    /// Job portals (declarative JSON boards, see `Portal`) the user switched on.
+    /// Off by default and kept apart from `enabledSources`, which syncs to the
+    /// desktop under `search.enabled_sources`; the desktop keeps its portal
+    /// switches under `search.portals.<id>.enabled`, which the sync contract
+    /// doesn't carry. Device-local.
+    public var enabledPortals: Set<String>
 
     public init(keywords: [String] = [], locations: [String] = ["Remote"],
                 excludeKeywords: [String] = [], minSalary: Int? = nil,
@@ -101,7 +107,8 @@ public struct SearchConfig: Codable, Equatable, Sendable {
                 ashbyBoards: [String] = [], workableAccounts: [String] = [],
                 recruiteeCompanies: [String] = [],
                 enabledSources: Set<String> = ["remoteok", "weworkremotely", "arbeitnow", "greenhouse"],
-                linkedInEnabled: Bool = false) {
+                linkedInEnabled: Bool = false,
+                enabledPortals: Set<String> = []) {
         self.keywords = keywords; self.locations = locations
         self.excludeKeywords = excludeKeywords; self.minSalary = minSalary
         self.requireStatedPay = requireStatedPay
@@ -112,6 +119,7 @@ public struct SearchConfig: Codable, Equatable, Sendable {
         self.recruiteeCompanies = recruiteeCompanies
         self.enabledSources = enabledSources
         self.linkedInEnabled = linkedInEnabled
+        self.enabledPortals = enabledPortals
     }
 
     // Tolerant decoding — a watchlist added in a later build must not reset the
@@ -138,12 +146,13 @@ public struct SearchConfig: Codable, Equatable, Sendable {
         recruiteeCompanies = c.lenient([String].self, .recruiteeCompanies, [])
         enabledSources = c.lenient(Set<String>.self, .enabledSources, d.enabledSources)
         linkedInEnabled = c.lenient(Bool.self, .linkedInEnabled, d.linkedInEnabled)
+        enabledPortals = c.lenient(Set<String>.self, .enabledPortals, d.enabledPortals)
     }
 
     enum CodingKeys: String, CodingKey {
         case keywords, locations, excludeKeywords, minSalary, requireStatedPay, inboxSort, maxAgeDays, remoteOnly
         case greenhouseBoards, leverCompanies, ashbyBoards, workableAccounts
-        case recruiteeCompanies, enabledSources, linkedInEnabled
+        case recruiteeCompanies, enabledSources, linkedInEnabled, enabledPortals
     }
 }
 

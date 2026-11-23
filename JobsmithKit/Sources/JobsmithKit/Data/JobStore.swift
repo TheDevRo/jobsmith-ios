@@ -160,11 +160,15 @@ public struct JobStore: Sendable {
         }
     }
 
-    public func setScore(jobId: String, score: Double, reasoning: String, matchReport: String?) throws {
+    /// `coverage` is replaced along with the score (nil clears it), so a
+    /// re-score never leaves the previous run's requirement list next to a
+    /// fresh score — same as the desktop `update_job_score`.
+    public func setScore(jobId: String, score: Double, reasoning: String, matchReport: String?,
+                         coverage: String? = nil) throws {
         try db.writer.write {
             try $0.execute(
-                sql: "UPDATE jobs SET fitScore = ?, fitReasoning = ?, matchReport = ? WHERE id = ?",
-                arguments: [score, reasoning, matchReport, jobId])
+                sql: "UPDATE jobs SET fitScore = ?, fitReasoning = ?, matchReport = ?, coverage = ? WHERE id = ?",
+                arguments: [score, reasoning, matchReport, coverage, jobId])
         }
     }
 

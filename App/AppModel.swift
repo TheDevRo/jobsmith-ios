@@ -581,7 +581,8 @@ final class AppModel {
             if !Task.isCancelled, !paused, failure == nil {
                 for (job, result) in await ScoringService.refineTop(quick, profile: config.profile, config: config) {
                     try? jobStore.setScore(jobId: job.id, score: result.score, reasoning: result.reasoning,
-                                           matchReport: result.matchReportJSON)
+                                           matchReport: result.matchReportJSON,
+                                           coverage: result.coverageJSON)
                 }
             }
             let done = scoreAllDone
@@ -777,7 +778,8 @@ final class AppModel {
                                                     config: config, engine: aiEngine)
         try? jobStore.setScore(jobId: job.id, score: result.score,
                                reasoning: result.reasoning,
-                               matchReport: result.matchReportJSON)
+                               matchReport: result.matchReportJSON,
+                               coverage: result.coverageJSON)
         return result
     }
 

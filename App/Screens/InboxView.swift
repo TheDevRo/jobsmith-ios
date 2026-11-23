@@ -25,13 +25,22 @@ struct InboxView: View {
 
     /// The Inbox sort is config-backed (synced via the `inbox.sort` setting),
     /// unlike the Pipeline which keeps its own per-device @AppStorage sort.
-    private var sort: JobSort { JobSort(canonical: model.config.search.inboxSort) ?? .bestMatch }
+    private var sort: JobSort {
+        coverageSort ? .bestCoverage : (JobSort(canonical: model.config.search.inboxSort) ?? .bestMatch)
+    }
+    /// "Best coverage" is the one Inbox sort that stays on this device.
+    @AppStorage(AppStorageKey.inboxBestCoverage) private var coverageSort = false
     /// Picker binding that persists a change straight to the config (so it
     /// exports on the next sync) instead of a device-local @AppStorage slot.
     private var sortSelection: Binding<JobSort> {
         Binding(
-            get: { JobSort(canonical: model.config.search.inboxSort) ?? .bestMatch },
-            set: { newValue in model.saveConfig { $0.search.inboxSort = newValue.canonical } }
+            get: { sort },
+            set: { newValue in
+                coverageSort = newValue == .bestCoverage
+                if newValue != .bestCoverage {
+                    model.saveConfig { $0.search.inboxSort = newValue.canonical }
+                }
+            }
         )
     }
     /// The standing pay gate runs before the session filters (search text,
@@ -516,6 +525,7 @@ struct JobCardView: View {
         } else {
             parts.append("not scored yet")
         }
+        if let coverage = job.requirementCoverage { parts.append(coverage.summary) }
         if job.isRemote { parts.append("remote") }
         if !job.location.isEmpty { parts.append(job.location) }
         if let salary = salaryText { parts.append(salary) }
@@ -536,7 +546,10 @@ struct JobCardView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                HeatChip(score: job.fitScore)
+                HStack(spacing: 6) {
+                    CoverageBadge(coverage: job.requirementCoverage)
+                    HeatChip(score: job.fitScore)
+                }
             }
 
             HStack(spacing: 6) {

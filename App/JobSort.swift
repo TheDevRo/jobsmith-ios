@@ -6,7 +6,7 @@ import JobsmithKit
 ///
 /// Job-board selection is a *filter*, not a sort — see `JobFilter`.
 enum JobSort: String, CaseIterable, Identifiable {
-    case bestBets, bestMatch, newest, salary, company
+    case bestBets, bestMatch, newest, salary, company, bestCoverage
 
     var id: String { rawValue }
 
@@ -31,6 +31,10 @@ enum JobSort: String, CaseIterable, Identifiable {
         case .newest: return "newest"
         case .salary: return "salary"
         case .company: return "company"
+        // Not a synced value: the desktop's `inbox.sort` has no coverage sort,
+        // so persisting this one stores the default instead (the Inbox keeps
+        // the coverage choice on this device — see `AppStorageKey`).
+        case .bestCoverage: return "best_match"
         }
     }
 
@@ -41,6 +45,7 @@ enum JobSort: String, CaseIterable, Identifiable {
         case .newest: return "Newest"
         case .salary: return "Salary"
         case .company: return "Company A–Z"
+        case .bestCoverage: return "Best coverage"
         }
     }
 
@@ -51,6 +56,7 @@ enum JobSort: String, CaseIterable, Identifiable {
         case .newest: return "clock"
         case .salary: return "dollarsign.circle"
         case .company: return "textformat"
+        case .bestCoverage: return "checklist"
         }
     }
 
@@ -74,6 +80,14 @@ enum JobSort: String, CaseIterable, Identifiable {
             return jobs.sorted { (Self.salaryKey($0), $0.dateDiscovered) > (Self.salaryKey($1), $1.dateDiscovered) }
         case .company:
             return jobs.sorted { Self.companyKey($0) < Self.companyKey($1) }
+        case .bestCoverage:
+            // Share of requirements covered, then fewer missing must-haves, then
+            // fit; jobs without coverage sink. Stable for equal keys.
+            return jobs.enumerated().sorted { a, b in
+                let ab = RequirementCoverage.isOrderedBefore(a.element, b.element)
+                let ba = RequirementCoverage.isOrderedBefore(b.element, a.element)
+                return ab == ba ? a.offset < b.offset : ab
+            }.map(\.element)
         }
     }
 
@@ -99,4 +113,7 @@ enum AppStorageKey {
     static let jobSort = "jobSort"
     /// Set once the first-search reassurance toast has been shown.
     static let hasSeenSearchTip = "hasSeenSearchTip"
+    /// The Inbox's "Best coverage" sort. Device-local: `inbox.sort` syncs to the
+    /// desktop, which has no such option.
+    static let inboxBestCoverage = "inboxBestCoverage"
 }

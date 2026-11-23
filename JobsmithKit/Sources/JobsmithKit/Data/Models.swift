@@ -42,6 +42,9 @@ public struct Job: Codable, Equatable, Sendable, Identifiable,
     /// When this job was soft-deleted (triage='deleted'), or nil if it isn't.
     /// Powers the Recently Deleted screen's ordering. Device-local — not synced.
     public var deletedAt: String?
+    /// JSON requirement coverage from scoring (see `RequirementCoverage`):
+    /// "covers N of M requirements". Device-local — not synced.
+    public var coverage: String?
 
     public init(from normalized: NormalizedJob) {
         self.id = UUID().uuidString
@@ -71,6 +74,7 @@ public struct Job: Codable, Equatable, Sendable, Identifiable,
         self.timesSeen = 1
         self.salaryEstimate = nil
         self.deletedAt = nil
+        self.coverage = nil
     }
 
     public var tagList: [String] {

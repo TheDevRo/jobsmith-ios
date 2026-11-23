@@ -67,6 +67,8 @@ struct JobDetailView: View {
                     .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.04)))
                 }
 
+                requirementsSection(job)
+
                 salarySection(job)
 
                 actionRow(job)
@@ -238,6 +240,51 @@ struct JobDetailView: View {
 
     private func reload() {
         job = try? model.jobStore.job(id: jobId)
+    }
+
+    /// "Covers N of M requirements": each requirement with a met / not-met
+    /// mark, must or nice, and the evidence the model quoted from the profile.
+    @ViewBuilder
+    private func requirementsSection(_ job: Job) -> some View {
+        if let coverage = job.requirementCoverage {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    Eyebrow(text: "Requirements")
+                    Spacer()
+                    Text(coverage.summary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.trailing)
+                }
+                ForEach(Array(coverage.requirements.enumerated()), id: \.offset) { _, requirement in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Image(systemName: requirement.met ? "checkmark.circle.fill" : "xmark.circle")
+                            .foregroundStyle(requirement.met ? Theme.success : Theme.emberDeep)
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Text(requirement.isMust ? "MUST" : "NICE")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                Text(requirement.text)
+                                    .font(.callout)
+                            }
+                            if requirement.met, let evidence = requirement.evidence {
+                                Text(evidence)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(
+                        "\(requirement.isMust ? "Must have" : "Nice to have"): \(requirement.text), "
+                        + (requirement.met ? "met" : "not met"))
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.04)))
+        }
     }
 
     /// Stated salary when the posting has one; otherwise the market estimate

@@ -7,10 +7,16 @@ public struct FitResult: Equatable, Sendable {
     /// Structured skill/keyword gap breakdown as JSON, or nil when the model
     /// output couldn't be parsed beyond a bare score.
     public var matchReportJSON: String?
+    /// Requirement coverage JSON ("covers N of M"), when the model returned a
+    /// usable "requirements" array. Parsed apart from the score so the
+    /// pinned `ScoreResponseParser` is untouched.
+    public var coverageJSON: String?
 
-    public init(score: Double, reasoning: String, matchReportJSON: String? = nil) {
+    public init(score: Double, reasoning: String, matchReportJSON: String? = nil,
+                coverageJSON: String? = nil) {
         self.score = score; self.reasoning = reasoning
         self.matchReportJSON = matchReportJSON
+        self.coverageJSON = coverageJSON
     }
 }
 
@@ -328,7 +334,7 @@ public enum ScoringService {
         // "Scoring & form-fill" lives on the Fast tier — and lets a user route
         // scoring on-device by assigning the fast tier to the on-device model.
         let request = CompletionRequest(user: prompt, tier: .fast,
-                                        temperature: config.ai.temperature, maxTokens: 1200)
+                                        temperature: config.ai.temperature, maxTokens: 1800)
         let text: String
         do {
             text = try await engine.complete(request, config: config.ai)
@@ -362,7 +368,8 @@ public enum ScoringService {
                    let score = LenientJSON.doubleValue(data["score"]) {
                     return FitResult(score: score,
                                      reasoning: data["reasoning"] as? String ?? "",
-                                     matchReportJSON: ScoreResponseParser.sanitizedMatchReportJSON(data))
+                                     matchReportJSON: ScoreResponseParser.sanitizedMatchReportJSON(data),
+                                     coverageJSON: RequirementCoverage.parse(retryText)?.json)
                         .scored(by: .llm(config.ai, retry.tier))
                 }
             } catch let retryError where TransientNetwork.isTransient(retryError) {
@@ -380,7 +387,8 @@ public enum ScoringService {
         if let parsed = ScoreResponseParser.parse(text) {
             return FitResult(score: parsed.score,
                              reasoning: parsed.reasoning,
-                             matchReportJSON: parsed.matchReportJSON)
+                             matchReportJSON: parsed.matchReportJSON,
+                             coverageJSON: RequirementCoverage.parse(text)?.json)
                 .scored(by: .llm(config.ai, request.tier))
         }
         throw ScoringError.unparseableResponse(String(text.prefix(200)))

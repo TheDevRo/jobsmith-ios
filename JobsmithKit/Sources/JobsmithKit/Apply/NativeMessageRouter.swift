@@ -202,7 +202,12 @@ public struct NativeMessageRouter: Sendable {
         // unfilled instead of quoting a default that may not fit this job.
         profile.desiredSalary = Self.contextualDesiredSalary(storedJob)
 
-        let mapper = FieldMapper(engine: engine, bank: AnswerBankMatcher(db))
+        var appFacts: [String] = []
+        if let jobId, !jobId.isEmpty,
+           let application = try? ApplicationStore(db).application(jobId: jobId) {
+            appFacts = (try? ApplicationFactStore(db).texts(applicationId: application.id)) ?? []
+        }
+        let mapper = FieldMapper(engine: engine, bank: AnswerBankMatcher(db), appFacts: appFacts)
         let outcome = await mapper.mapWithDiagnostics(fields: fields, profile: profile,
                                                       job: job, config: config)
 

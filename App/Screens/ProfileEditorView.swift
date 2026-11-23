@@ -62,6 +62,23 @@ struct ProfileEditorView: View {
             }
 
             Section {
+                NavigationLink {
+                    ProfileFactsView(facts: $profile.facts)
+                } label: {
+                    HStack {
+                        Label("Facts about me", systemImage: "text.badge.checkmark")
+                        Spacer()
+                        Text(profile.facts.isEmpty ? "None" : "\(profile.facts.count)")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Eyebrow(text: "Facts")
+            } footer: {
+                Text("Short true statements the AI can use in every resume, cover letter, edit and written answer.")
+            }
+
+            Section {
                 TextField("Python, Docker, AWS", text: $skillsText, axis: .vertical)
                     .lineLimit(2...6)
                     .textInputAutocapitalization(.never)

@@ -203,9 +203,16 @@ public enum FactGuard {
         let years = experienceYears(profile, today: today)
         // A listed certification backs saying "certified" (the credential words are checked by stem).
         let certified = profile.certifications.isEmpty ? "" : "certified certification"
-        let parts: [String] = [certified] + profileStrings
-            + [job?.title ?? "", job?.company ?? "", job?.location ?? "", job?.description ?? ""]
-            + appFacts + extra + [years.map { String($0) } ?? ""]
+        // Built up in steps: one long `+` chain is too much for the type checker.
+        var parts: [String] = [certified]
+        parts.append(contentsOf: profileStrings)
+        parts.append(job?.title ?? "")
+        parts.append(job?.company ?? "")
+        parts.append(job?.location ?? "")
+        parts.append(job?.description ?? "")
+        parts.append(contentsOf: appFacts)
+        parts.append(contentsOf: extra)
+        if let years { parts.append(String(years)) }
         return sources(from: parts)
     }
 

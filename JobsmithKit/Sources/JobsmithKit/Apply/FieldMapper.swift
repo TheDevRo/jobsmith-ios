@@ -150,7 +150,8 @@ public struct FieldMapper: Sendable {
         var llmResults: [FieldValue] = nliResults ?? []
         var llmError: String?
         if !llmFields.isEmpty && nliResults == nil {
-            let system = PromptRegistry.template("auto_apply_field_map", config: config)
+            let system = PromptRegistry.withPostingGuard(
+                PromptRegistry.template("auto_apply_field_map", config: config))
             let answerBank = bank.allSnippets()
 
             var chunks: [[FieldDescriptor]] = []
@@ -344,7 +345,7 @@ public struct FieldMapper: Sendable {
         let fieldsStr = prettyJSON(fields)
         return "CANDIDATE PROFILE:\n\(profileText(profile))\n\n"
             + "JOB:\nTitle: \(job.title)\nCompany: \(job.company)\n"
-            + "Description (first 300 chars):\n\(String(job.description.prefix(300)))\n\n"
+            + "Description (first 300 chars):\n\(PromptRegistry.fencePosting(String(job.description.prefix(300))))\n\n"
             + "ANSWER BANK:\n\(bankStr)\n\n"
             + "FORM FIELDS TO MAP:\n\(fieldsStr)\n\n"
             + "Return the JSON array now."

@@ -31,6 +31,8 @@ jobs:
         run: xcodegen generate
       - name: Test JobsmithKit
         run: |
+          # Without pipefail, xcpretty's exit status hides a failed build or test run.
+          set -o pipefail
           DEST=$(xcrun simctl list devices available \
             | grep -m1 -o 'iPhone [0-9]\+' || echo 'iPhone 16')
           xcodebuild -scheme JobsmithKit \

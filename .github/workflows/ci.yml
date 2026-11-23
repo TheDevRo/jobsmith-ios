@@ -38,3 +38,13 @@ jobs:
           xcodebuild -scheme JobsmithKit \
             -destination "platform=iOS Simulator,name=$DEST" \
             test CODE_SIGNING_ALLOWED=NO | xcpretty || exit 1
+      # The scheme above builds only the Kit and its tests, so nothing else
+      # compiles the SwiftUI app target. Build it too (no signing needed).
+      - name: Build the app
+        run: |
+          set -o pipefail
+          DEST=$(xcrun simctl list devices available \
+            | grep -m1 -o 'iPhone [0-9]\+' || echo 'iPhone 16')
+          xcodebuild -scheme JobsmithStandalone \
+            -destination "platform=iOS Simulator,name=$DEST" \
+            build CODE_SIGNING_ALLOWED=NO | xcpretty

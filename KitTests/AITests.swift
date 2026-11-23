@@ -226,7 +226,7 @@ final class ScoringServiceTests: XCTestCase {
         XCTAssertEqual(report?["matched_skills"] as? [String], ["Swift", "iOS"])
         XCTAssertEqual(report?["title_alignment"] as? String, "strong")
         XCTAssertEqual(mock.requests.count, 1)
-        XCTAssertEqual(mock.requests[0].maxTokens, 1200)
+        XCTAssertEqual(mock.requests[0].maxTokens, 1800)
         XCTAssertEqual(mock.requests[0].tier, .fast)
     }
 

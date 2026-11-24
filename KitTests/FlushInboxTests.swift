@@ -103,6 +103,27 @@ final class FlushInboxTests: XCTestCase {
         XCTAssertEqual(try externalIds(db), ["fresh"])
     }
 
+    /// Jobs synced from the desktop carry its date formats; the age filter must read them.
+    func testAgeFilterReadsDesktopDateFormats() throws {
+        let db = try AppDatabase.inMemory()
+        let store = JobStore(db)
+        let sqliteStyle = try seed(store, "sqlite-style")
+        let pythonStyle = try seed(store, "python-style")
+        let recent = try seed(store, "recent")
+        try db.writer.write { dbc in
+            try dbc.execute(sql: "UPDATE jobs SET dateDiscovered = ? WHERE id = ?",
+                            arguments: ["2020-01-02 03:04:05", sqliteStyle])
+            try dbc.execute(sql: "UPDATE jobs SET dateDiscovered = ? WHERE id = ?",
+                            arguments: ["2020-01-02T03:04:05.123456+00:00", pythonStyle])
+        }
+        try setDiscovered(db, recent, daysAgo: 1)
+        let cutoff = Date().addingTimeInterval(-14 * 86_400)
+
+        XCTAssertEqual(try store.flushableCount(olderThan: cutoff), 2)
+        XCTAssertEqual(try store.flushInbox(olderThan: cutoff), 2)
+        XCTAssertEqual(try externalIds(db), ["recent"])
+    }
+
     func testFlushedPostingIsInsertedFreshByLaterUpsert() throws {
         let db = try AppDatabase.inMemory()
         let store = JobStore(db)

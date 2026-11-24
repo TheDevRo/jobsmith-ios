@@ -322,7 +322,16 @@ public struct JobStore: Sendable {
         if let date = plain.date(from: value) { return date }
         let fractional = ISO8601DateFormatter()
         fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return fractional.date(from: value)
+        if let date = fractional.date(from: value) { return date }
+        // Jobs synced from the desktop keep its stamps: SQLite's "2026-11-24 22:00:00"
+        // or Python's "2026-11-24T22:00:00.123456+00:00", both UTC. The age filter only
+        // needs the day, so read the first 19 characters as UTC.
+        let head = String(value.prefix(19)).replacingOccurrences(of: " ", with: "T")
+        let utc = DateFormatter()
+        utc.locale = Locale(identifier: "en_US_POSIX")
+        utc.timeZone = TimeZone(identifier: "UTC")
+        utc.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        return utc.date(from: head)
     }
 
     /// How many jobs `flushInbox(olderThan:)` would remove right now.

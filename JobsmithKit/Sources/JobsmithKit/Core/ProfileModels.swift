@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 /// Candidate profile — the single source of truth the AI draws from.
 /// Mirrors the `profile:` section of the desktop config.yaml.
@@ -147,6 +148,26 @@ public struct WorkExperience: Codable, Equatable, Sendable, Identifiable {
         self.startDate = startDate; self.endDate = endDate
         self.bullets = bullets; self.pinned = pinned
     }
+
+    enum CodingKeys: String, CodingKey { case id, title, company, startDate, endDate, bullets, pinned }
+
+    // The desktop app doesn't store an `id` on entries (the sync schema makes it
+    // optional), so a missing one must not fail the decode: that used to empty
+    // the whole list. Every field is lenient for the same reason.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let title = c.lenient(String.self, .title, "")
+        let company = c.lenient(String.self, .company, "")
+        let startDate = c.lenient(String.self, .startDate, "")
+        let fallbackID = ProfileEntryID.derived("experience", title, company, startDate)
+        self.id = c.lenient(UUID.self, .id, fallbackID)
+        self.title = title
+        self.company = company
+        self.startDate = startDate
+        self.endDate = c.lenient(String.self, .endDate, "Present")
+        self.bullets = c.lenient([String].self, .bullets, [])
+        self.pinned = c.lenient(Bool.self, .pinned, false)
+    }
 }
 
 public struct Education: Codable, Equatable, Sendable, Identifiable {
@@ -157,6 +178,21 @@ public struct Education: Codable, Equatable, Sendable, Identifiable {
 
     public init(id: UUID = UUID(), degree: String = "", school: String = "", year: String = "") {
         self.id = id; self.degree = degree; self.school = school; self.year = year
+    }
+
+    enum CodingKeys: String, CodingKey { case id, degree, school, year }
+
+    /// Lenient for the same reason as `WorkExperience`.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let degree = c.lenient(String.self, .degree, "")
+        let school = c.lenient(String.self, .school, "")
+        let year = c.lenient(String.self, .year, "")
+        let fallbackID = ProfileEntryID.derived("education", degree, school, year)
+        self.id = c.lenient(UUID.self, .id, fallbackID)
+        self.degree = degree
+        self.school = school
+        self.year = year
     }
 }
 
@@ -170,5 +206,35 @@ public struct Reference: Codable, Equatable, Sendable, Identifiable {
     public init(id: UUID = UUID(), name: String = "", position: String = "", email: String = "", phone: String = "") {
         self.id = id; self.name = name; self.position = position
         self.email = email; self.phone = phone
+    }
+
+    enum CodingKeys: String, CodingKey { case id, name, position, email, phone }
+
+    /// Lenient for the same reason as `WorkExperience`.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let name = c.lenient(String.self, .name, "")
+        let email = c.lenient(String.self, .email, "")
+        let phone = c.lenient(String.self, .phone, "")
+        let fallbackID = ProfileEntryID.derived("reference", name, email, phone)
+        self.id = c.lenient(UUID.self, .id, fallbackID)
+        self.name = name
+        self.position = c.lenient(String.self, .position, "")
+        self.email = email
+        self.phone = phone
+    }
+}
+
+/// A stable id for a profile entry that arrived without one: the same content
+/// always maps to the same UUID, so re-decoding (every sync) doesn't make the
+/// profile look changed and get re-sent.
+enum ProfileEntryID {
+    static func derived(_ kind: String, _ parts: String...) -> UUID {
+        let text = ([kind] + parts).joined(separator: "\u{1F}")
+        var bytes = Array(SHA256.hash(data: Data(text.utf8)).prefix(16))
+        bytes[6] = (bytes[6] & 0x0F) | 0x50   // version 5-style (name-based)
+        bytes[8] = (bytes[8] & 0x3F) | 0x80   // RFC 4122 variant
+        return UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                           bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]))
     }
 }

@@ -83,7 +83,16 @@ public final class SyncManager {
 
         let engine = SyncEngine(
             db: db, deviceId: device,
-            loadProfile: { profileOn ? profileSnapshot : nil },
+            // After an import, report the profile as it was just saved (normalised
+            // through Profile, exactly as the next export will see it). The engine
+            // builds its "last seen" snapshot from this; returning the pre-sync
+            // profile instead made the next cycle think the profile had changed
+            // and re-send it as the newest copy.
+            loadProfile: {
+                guard profileOn else { return nil }
+                guard let mergedProfile else { return profileSnapshot }
+                return SyncManager.profileToDict(SyncManager.dictToProfile(mergedProfile))
+            },
             saveProfile: { mergedProfile = $0 },
             loadSettings: { settingsSnapshot },
             saveSettings: { mergedSettings = $0 },

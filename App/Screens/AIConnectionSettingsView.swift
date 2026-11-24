@@ -467,7 +467,7 @@ struct AIConnectionSettingsView: View {
         } header: {
             Eyebrow(text: "Quick match")
         } footer: {
-            Text("Scores every job on this device in a fraction of a second, from how well your profile covers each requirement. Jobs it can't judge go to your Writing model. One-time download of \(ByteCountFormatter.string(fromByteCount: QuickMatchModel.sizeBytes, countStyle: .file)); it keeps downloading if you leave this screen.")
+            Text("Scores every job on this device in a fraction of a second, from how well your profile covers each requirement. Jobs it can't judge go to your Writing model. Model: BGE-small-en-v1.5 (BAAI), a small text-matching model, with Jobsmith’s scoring on top. One-time download of \(ByteCountFormatter.string(fromByteCount: QuickMatchModel.sizeBytes, countStyle: .file)); it keeps downloading if you leave this screen.")
         }
     }
 
@@ -496,7 +496,7 @@ struct AIConnectionSettingsView: View {
         } header: {
             Eyebrow(text: "Local match")
         } footer: {
-            Text("Jobsmith’s own on-device model — separate from Apple Intelligence. It checks your profile against each requirement: it fills application forms only from your profile (options, profile values, years of experience), and scores jobs whenever your AI model fails (unreachable, misconfigured, or out of quota). With Quick match on, it also judges the jobs Quick match can't, and “Refine top matches” re-checks the top 15% of each run. Every score is labeled with what produced it: “Quick match”, “Local match”, “Apple Intelligence”, or your endpoint’s model name. Essay questions still use your AI model and are marked as drafts. One-time download of \(ByteCountFormatter.string(fromByteCount: NLIModel.sizeBytes, countStyle: .file)); it keeps downloading if you leave this screen or the app.")
+            Text("Jobsmith’s own on-device model — separate from Apple Intelligence. Model: DeBERTa-v3-large (MoritzLaurer’s NLI model, 8-bit). It checks your profile against each requirement: it fills application forms only from your profile (options, profile values, years of experience), and scores jobs whenever your AI model fails (unreachable, misconfigured, or out of quota). With Quick match on, it also judges the jobs Quick match can't, and “Refine top matches” re-checks the top 15% of each run. Every score is labeled with what produced it: “Quick match”, “Local match”, “Apple Intelligence”, or your endpoint’s model name. Essay questions still use your AI model and are marked as drafts. One-time download of \(ByteCountFormatter.string(fromByteCount: NLIModel.sizeBytes, countStyle: .file)); it keeps downloading if you leave this screen or the app.")
         }
     }
 

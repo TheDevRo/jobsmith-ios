@@ -49,9 +49,11 @@ jobs:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           TEAM_ID: ${{ secrets.TEAM_ID }}
-          BUILD: ${{ inputs.build_number || format('{0}', 1000 + github.run_number) }}
+          BUILD_INPUT: ${{ inputs.build_number }}
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
           set -euo pipefail
+          BUILD="${BUILD_INPUT:-$((1000 + RUN_NUMBER))}"
           for v in ASC_ISSUER_ID TEAM_ID; do
             [ -n "${!v}" ] || { echo "Missing repo secret $v"; exit 1; }
           done

@@ -36,14 +36,15 @@ public enum TailoringService {
     public static func tailorResume(job: Job, profile: Profile, config: AppConfig,
                                     engine: AIEngine,
                                     honestyLevel: HonestyConfig.Level? = nil,
-                                    matchReportJSON: String? = nil) async throws -> String {
+                                    matchReportJSON: String? = nil,
+                                    appFacts: [String] = []) async throws -> String {
         let level = honestyLevel ?? config.honesty.level
         let selected = await selectResumeExperiences(
             profile.experience, job: job,
             maxEntries: config.honesty.maxResumeExperienceEntries,
             config: config, engine: engine)
 
-        let prompt = PromptRegistry.render("tailor_resume", [
+        var prompt = PromptRegistry.render("tailor_resume", [
             "honesty_instruction": Directives.honestyInstruction(level),
             "keyword_targets": keywordTargetsBlock(matchReportJSON),
             "job_title": job.title,
@@ -51,6 +52,7 @@ public enum TailoringService {
             "job_description": String(job.description.prefix(5000)),
             "profile_summary": Directives.profileSummary(profile, experiences: selected),
         ], config: config)
+        prompt += CandidateFacts.block(profile: profile, applicationFacts: appFacts, honesty: level)
 
         let request = CompletionRequest(user: prompt, tier: .strong,
                                         temperature: config.ai.temperature,
@@ -63,14 +65,15 @@ public enum TailoringService {
 
     public static func coverLetter(job: Job, profile: Profile, config: AppConfig,
                                    engine: AIEngine,
-                                   honestyLevel: HonestyConfig.Level? = nil) async throws -> String {
+                                   honestyLevel: HonestyConfig.Level? = nil,
+                                   appFacts: [String] = []) async throws -> String {
         let level = honestyLevel ?? config.honesty.level
         let selected = await selectResumeExperiences(
             profile.experience, job: job,
             maxEntries: config.honesty.maxResumeExperienceEntries,
             config: config, engine: engine)
 
-        let prompt = PromptRegistry.render("cover_letter", [
+        var prompt = PromptRegistry.render("cover_letter", [
             "honesty_instruction": Directives.honestyInstruction(level),
             "tone_instruction": Directives.toneInstruction(config.honesty.coverLetterTone),
             "job_title": job.title,
@@ -78,6 +81,7 @@ public enum TailoringService {
             "job_description": String(job.description.prefix(5000)),
             "profile_summary": Directives.profileSummary(profile, experiences: selected),
         ], config: config)
+        prompt += CandidateFacts.block(profile: profile, applicationFacts: appFacts, honesty: level)
 
         let request = CompletionRequest(user: prompt, tier: .strong,
                                         temperature: config.ai.temperature,
@@ -92,14 +96,15 @@ public enum TailoringService {
                                     job: Job, profile: Profile, config: AppConfig,
                                     engine: AIEngine,
                                     tier: ModelTier? = nil,
-                                    honestyLevel: HonestyConfig.Level? = nil) async throws -> String {
+                                    honestyLevel: HonestyConfig.Level? = nil,
+                                    appFacts: [String] = []) async throws -> String {
         let level = honestyLevel ?? config.honesty.level
         let selected = await selectResumeExperiences(
             profile.experience, job: job,
             maxEntries: config.honesty.maxResumeExperienceEntries,
             config: config, engine: engine)
 
-        let prompt = PromptRegistry.render("revise_resume", [
+        var prompt = PromptRegistry.render("revise_resume", [
             "honesty_instruction": Directives.honestyInstruction(level),
             "fabrication_guard": Directives.reviseFabricationGuard(level),
             "profile_summary": Directives.profileSummary(profile, experiences: selected),
@@ -109,6 +114,7 @@ public enum TailoringService {
             "user_instructions": instructions,
             "current_resume": currentResume,
         ], config: config)
+        prompt += CandidateFacts.block(profile: profile, applicationFacts: appFacts, honesty: level)
 
         let request = CompletionRequest(user: prompt, tier: tier ?? config.honesty.aiEditTier,
                                         temperature: 0.5,
@@ -121,14 +127,15 @@ public enum TailoringService {
                                          job: Job, profile: Profile, config: AppConfig,
                                          engine: AIEngine,
                                          tier: ModelTier? = nil,
-                                         honestyLevel: HonestyConfig.Level? = nil) async throws -> String {
+                                         honestyLevel: HonestyConfig.Level? = nil,
+                                         appFacts: [String] = []) async throws -> String {
         let level = honestyLevel ?? config.honesty.level
         let selected = await selectResumeExperiences(
             profile.experience, job: job,
             maxEntries: config.honesty.maxResumeExperienceEntries,
             config: config, engine: engine)
 
-        let prompt = PromptRegistry.render("revise_cover_letter", [
+        var prompt = PromptRegistry.render("revise_cover_letter", [
             "honesty_instruction": Directives.honestyInstruction(level),
             "tone_instruction": Directives.toneInstruction(config.honesty.coverLetterTone),
             "fabrication_guard": Directives.reviseFabricationGuard(level),
@@ -139,6 +146,7 @@ public enum TailoringService {
             "user_instructions": instructions,
             "current_letter": currentLetter,
         ], config: config)
+        prompt += CandidateFacts.block(profile: profile, applicationFacts: appFacts, honesty: level)
 
         let request = CompletionRequest(user: prompt, tier: tier ?? config.honesty.aiEditTier,
                                         temperature: 0.5,

@@ -37,6 +37,11 @@ public struct Profile: Codable, Equatable, Sendable {
     public var certifications: [String]
     /// Appended verbatim to generated resumes — never sent to the AI.
     public var references: [Reference]
+    /// "Facts about me": short true statements the AI may rely on in every
+    /// writing prompt (desktop `profile.facts`). Kept on this device — the
+    /// vendored profile sync contract doesn't carry it, so it is neither
+    /// exported nor overwritten by an import. Capped by `CandidateFacts`.
+    public var facts: [String]
 
     public init(
         fullName: String = "", middleName: String = "", email: String = "",
@@ -51,7 +56,8 @@ public struct Profile: Codable, Equatable, Sendable {
         availableStart: String = "", noticePeriod: String = "",
         summary: String = "", skills: [String] = [],
         experience: [WorkExperience] = [], education: [Education] = [],
-        certifications: [String] = [], references: [Reference] = []
+        certifications: [String] = [], references: [Reference] = [],
+        facts: [String] = []
     ) {
         self.fullName = fullName; self.middleName = middleName; self.email = email
         self.phone = phone
@@ -69,6 +75,7 @@ public struct Profile: Codable, Equatable, Sendable {
         self.summary = summary; self.skills = skills
         self.experience = experience; self.education = education
         self.certifications = certifications; self.references = references
+        self.facts = facts
     }
 
     // Tolerant decoding: a field added in a later build (or one whose payload
@@ -105,6 +112,7 @@ public struct Profile: Codable, Equatable, Sendable {
         education = c.lenient([Education].self, .education, [])
         certifications = c.lenient([String].self, .certifications, [])
         references = c.lenient([Reference].self, .references, [])
+        facts = c.lenient([String].self, .facts, [])
     }
 
     enum CodingKeys: String, CodingKey {
@@ -113,7 +121,7 @@ public struct Profile: Codable, Equatable, Sendable {
         case linkedin, github, portfolio, desiredSalary, workAuthorization
         case sponsorshipRequired, gender, raceEthnicity, veteranStatus
         case disabilityStatus, availableStart, noticePeriod, summary, skills
-        case experience, education, certifications, references
+        case experience, education, certifications, references, facts
     }
 
     public var isEmpty: Bool {

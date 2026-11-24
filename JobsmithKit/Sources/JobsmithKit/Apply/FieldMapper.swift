@@ -23,13 +23,19 @@ public struct FieldMapper: Sendable {
     let bank: AnswerBankMatcher
     let chunkSize: Int
     let nli: LocalNLI.Provider
+    /// "Facts for this application" — folded into free-text answers together
+    /// with the profile's own facts (the desktop passes them via the job's
+    /// application id).
+    let appFacts: [String]
 
     public init(engine: any AIEngine, bank: AnswerBankMatcher, chunkSize: Int = 25,
-                nli: @escaping LocalNLI.Provider = LocalNLI.live) {
+                nli: @escaping LocalNLI.Provider = LocalNLI.live,
+                appFacts: [String] = []) {
         self.engine = engine
         self.bank = bank
         self.chunkSize = chunkSize
         self.nli = nli
+        self.appFacts = appFacts
     }
 
     /// Upload fields that clearly want something other than a resume/cover
@@ -150,7 +156,8 @@ public struct FieldMapper: Sendable {
         var llmResults: [FieldValue] = nliResults ?? []
         var llmError: String?
         if !llmFields.isEmpty && nliResults == nil {
-            let system = PromptRegistry.template("auto_apply_field_map", config: config)
+            let system = PromptRegistry.withPostingGuard(
+                PromptRegistry.template("auto_apply_field_map", config: config))
             let answerBank = bank.allSnippets()
 
             var chunks: [[FieldDescriptor]] = []
@@ -248,10 +255,12 @@ public struct FieldMapper: Sendable {
             return nil
         }
         let engine = self.engine
+        let appFacts = self.appFacts
         do {
             return try await Extractive.fill(profile: profile, fields: fields, bank: bank.allSnippets(),
                                              nli: scorer, today: .init(Date())) { field in
-                await Self.essayAnswer(field: field, profile: profile, job: job, config: config, engine: engine)
+                await Self.essayAnswer(field: field, profile: profile, job: job, config: config, engine: engine,
+                                       appFacts: appFacts)
             }
         } catch {
             NSLog("FieldMapper: local model failed (\(error)); falling back to the LLM")
@@ -262,10 +271,13 @@ public struct FieldMapper: Sendable {
     /// One free-text answer from the configured LLM (port of LLMClient.generate_answer);
     /// nil when it can't be reached. The profile text carries no EEO answers.
     static func essayAnswer(field: FieldDescriptor, profile: Profile, job: ApplyJobContext,
-                            config: AppConfig, engine: any AIEngine) async -> String? {
+                            config: AppConfig, engine: any AIEngine,
+                            appFacts: [String] = []) async -> String? {
         let system = PromptRegistry.render("auto_apply_answer", ["max_words": "80"], config: config)
         let question = field.label.isEmpty ? field.name : field.label
-        let user = "CANDIDATE PROFILE:\n\(profileText(profile))\n\n"
+        // Facts the candidate wrote count as part of the profile for this rule.
+        let facts = CandidateFacts.block(profile: profile, applicationFacts: appFacts)
+        let user = "CANDIDATE PROFILE:\n\(profileText(profile))\n\(facts)\n"
             + "JOB: \(job.title) at \(job.company)\n\n"
             + "QUESTION: \(question)\n\nANSWER:"
         return try? await engine.complete(
@@ -344,7 +356,7 @@ public struct FieldMapper: Sendable {
         let fieldsStr = prettyJSON(fields)
         return "CANDIDATE PROFILE:\n\(profileText(profile))\n\n"
             + "JOB:\nTitle: \(job.title)\nCompany: \(job.company)\n"
-            + "Description (first 300 chars):\n\(String(job.description.prefix(300)))\n\n"
+            + "Description (first 300 chars):\n\(PromptRegistry.fencePosting(String(job.description.prefix(300))))\n\n"
             + "ANSWER BANK:\n\(bankStr)\n\n"
             + "FORM FIELDS TO MAP:\n\(fieldsStr)\n\n"
             + "Return the JSON array now."

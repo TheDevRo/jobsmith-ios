@@ -18,6 +18,9 @@ public enum SourceCatalog {
         "usajobs": "USAJobs",
         "linkedin": "LinkedIn",
         "indeed": "Indeed",
+        "remotive": "Remotive",
+        "himalayas": "Himalayas",
+        "jobicy": "Jobicy",
     ]
 
     /// Pretty name for a source slug, e.g. "linkedin" → "LinkedIn". Unknown

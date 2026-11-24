@@ -18,6 +18,15 @@ public enum SourceRegistry {
 
     public static var allIDs: [String] { all.map(\.id) }
 
+    /// The bundled job portals (Remotive, Himalayas, Jobicy), which sit after
+    /// the built-in sources and are opt-in.
+    public static var portalIDs: [String] { PortalCatalog.bundled.map(\.id) }
+
+    /// The portals the user has switched on.
+    public static func enabledPortalIDs(for config: AppConfig) -> [String] {
+        portalIDs.filter { config.search.enabledPortals.contains($0) }
+    }
+
     /// Whether `id` may be fetched at all under this config, feature flags
     /// included. Distinct from the user's per-source toggle: a source can be
     /// switched on in `enabledSources` and still be off the table here.
@@ -37,12 +46,13 @@ public enum SourceRegistry {
         allIDs.filter { id in
             guard isAvailable(id, config: config) else { return false }
             return id == LinkedInSource.id || config.search.enabledSources.contains(id)
-        }
+        } + enabledPortalIDs(for: config)
     }
 
     public static func source(for id: String) -> (any JobSource)? {
         let key = id.lowercased()
-        return all.first { $0.id == key }?.make()
+        if let built = all.first(where: { $0.id == key }) { return built.make() }
+        return PortalCatalog.portal(id: key).map { PortalSource(portal: $0) }
     }
 
     /// The per-source budget FetchPipeline enforces for `id`, if registered.

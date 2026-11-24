@@ -31,8 +31,37 @@ jobs:
         run: xcodegen generate
       - name: Test JobsmithKit
         run: |
+          # Without pipefail, xcpretty's exit status hides a failed build or test run.
+          set -o pipefail
           DEST=$(xcrun simctl list devices available \
             | grep -m1 -o 'iPhone [0-9]\+' || echo 'iPhone 16')
           xcodebuild -scheme JobsmithKit \
             -destination "platform=iOS Simulator,name=$DEST" \
             test CODE_SIGNING_ALLOWED=NO | xcpretty || exit 1
+
+  # The job above builds only the Kit and its tests, so nothing else compiles
+  # the SwiftUI app target. Build it too (no signing needed). It uses iOS 26
+  # APIs (BGContinuedProcessingTask), so it needs the newest Xcode on the image.
+  app:
+    name: App builds (xcodebuild)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install xcodegen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Select the newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          NEWEST=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$NEWEST"
+          xcodebuild -version
+      - name: Build the app
+        run: |
+          set -o pipefail
+          DEST=$(xcrun simctl list devices available \
+            | grep -m1 -o 'iPhone [0-9]\+' || echo 'iPhone 16')
+          xcodebuild -scheme JobsmithStandalone \
+            -destination "platform=iOS Simulator,name=$DEST" \
+            build CODE_SIGNING_ALLOWED=NO | xcpretty

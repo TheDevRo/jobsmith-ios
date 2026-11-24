@@ -12,6 +12,7 @@ final class AppModel {
     let jobStore: JobStore
     let searchRunStore: SearchRunStore
     let applicationStore: ApplicationStore
+    let applicationFactStore: ApplicationFactStore
     let activityStore: ActivityStore
     let answerBank: AnswerBankStore
     let configStore: ConfigStore
@@ -75,6 +76,7 @@ final class AppModel {
         jobStore = JobStore(database)
         searchRunStore = SearchRunStore(database)
         applicationStore = ApplicationStore(database)
+        applicationFactStore = ApplicationFactStore(database)
         activityStore = ActivityStore(database)
         answerBank = AnswerBankStore(database)
         configStore = ConfigStore.shared
@@ -579,7 +581,8 @@ final class AppModel {
             if !Task.isCancelled, !paused, failure == nil {
                 for (job, result) in await ScoringService.refineTop(quick, profile: config.profile, config: config) {
                     try? jobStore.setScore(jobId: job.id, score: result.score, reasoning: result.reasoning,
-                                           matchReport: result.matchReportJSON)
+                                           matchReport: result.matchReportJSON,
+                                           coverage: result.coverageJSON)
                 }
             }
             let done = scoreAllDone
@@ -775,7 +778,8 @@ final class AppModel {
                                                     config: config, engine: aiEngine)
         try? jobStore.setScore(jobId: job.id, score: result.score,
                                reasoning: result.reasoning,
-                               matchReport: result.matchReportJSON)
+                               matchReport: result.matchReportJSON,
+                               coverage: result.coverageJSON)
         return result
     }
 
@@ -817,14 +821,20 @@ final class AppModel {
         defer { busyJobIds.remove(job.id); refresh() }
         do {
             try jobStore.setStatus("tailoring", jobId: job.id)
+            // A re-tailor replaces the draft, so the facts kept on the old one
+            // are read first and carried over to the new one.
+            let carriedFacts = (try? applicationFactStore.texts(jobId: job.id)) ?? []
             let resume = try await TailoringService.tailorResume(
-                job: job, profile: config.profile, config: config, engine: aiEngine)
+                job: job, profile: config.profile, config: config, engine: aiEngine,
+                appFacts: carriedFacts)
             let coverLetter = try await TailoringService.coverLetter(
-                job: job, profile: config.profile, config: config, engine: aiEngine)
+                job: job, profile: config.profile, config: config, engine: aiEngine,
+                appFacts: carriedFacts)
             let application = try applicationStore.createOrReplace(
                 jobId: job.id, resume: resume, coverLetter: coverLetter,
                 honestyLevel: config.honesty.level.rawValue,
                 stylePreset: config.honesty.resumeStyle.rawValue)
+            try? applicationFactStore.add(applicationId: application.id, texts: carriedFacts)
             try regenerateDocuments(for: application, job: job)
             try jobStore.setStatus("review", jobId: job.id)
             activityStore.log("tailored", "Resume + cover letter for \(job.title)", jobId: job.id)

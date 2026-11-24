@@ -263,6 +263,26 @@ public struct AppDatabase: Sendable {
             try db.create(indexOn: "ats_accounts", columns: ["provider"])
         }
 
+        // Desktop parity. `jobs.coverage` holds the requirement coverage JSON
+        // from scoring; `application_facts` holds the short true statements the
+        // candidate keeps for one application (ride along with every AI write
+        // or edit of it). Both are device-local, like the desktop's: neither is
+        // part of the sync contract, and SyncEngine writes jobs/applications
+        // by explicit column lists so it never touches them.
+        migrator.registerMigration("v10_coverage_and_facts") { db in
+            try db.alter(table: "jobs") { t in
+                t.add(column: "coverage", .text)
+            }
+            try db.create(table: "application_facts") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("applicationId", .text).notNull()
+                    .references("applications", onDelete: .cascade)
+                t.column("text", .text).notNull()
+                t.column("createdAt", .text).notNull()
+            }
+            try db.create(indexOn: "application_facts", columns: ["applicationId"])
+        }
+
         return migrator
     }
 }

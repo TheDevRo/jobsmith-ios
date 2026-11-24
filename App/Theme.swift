@@ -1,4 +1,5 @@
 import SwiftUI
+import JobsmithKit
 
 /// Jobsmith visual system. One signature idea: fit score is "heat" — the
 /// forge metaphor. Scores render on a steel→ember ramp; amber is reserved
@@ -175,5 +176,29 @@ struct HeatRing: View {
         .frame(width: diameter, height: diameter)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Fit score \(Int(score)) of 100")
+    }
+}
+
+/// "N/M" requirement coverage next to the fit score. Amber when a must-have is
+/// missing; the count is always text, so colour is never the only signal.
+struct CoverageBadge: View {
+    let coverage: RequirementCoverage?
+
+    var body: some View {
+        if let coverage {
+            let gap = coverage.missingMust > 0
+            HStack(spacing: 3) {
+                Image(systemName: "checklist")
+                    .font(.caption2)
+                Text(coverage.badge)
+                    .font(.caption.weight(.semibold).monospacedDigit())
+            }
+            .foregroundStyle(gap ? Theme.emberDeep : Color.secondary)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(Capsule().strokeBorder(gap ? Theme.emberDeep.opacity(0.6) : Color.secondary.opacity(0.4)))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(coverage.summary)
+        }
     }
 }

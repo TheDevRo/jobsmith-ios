@@ -289,6 +289,7 @@ struct SearchSettingsView: View {
             } footer: {
                 Text("Most sources just work. Adzuna and USAJobs need a free API key — fields appear below when you turn them on.")
             }
+            portalsSection
             LinkedInSettingsSection()
             // All the credentialed sources' keys, in one place (UX-05).
             SourceKeysSettingsView(adzunaAppID: $adzunaAppID,
@@ -421,6 +422,37 @@ struct SearchSettingsView: View {
          ("ashby", "Ashby boards"), ("workable", "Workable"),
          ("recruitee", "Recruitee"), ("adzuna", "Adzuna (API key)"),
          ("usajobs", "USAJobs (API key)")]
+    }
+
+    /// Job portals: free remote-job APIs described by bundled JSON files. Off by
+    /// default; each fetch honours the board's own rate limit.
+    @ViewBuilder private var portalsSection: some View {
+        Section {
+            ForEach(PortalCatalog.bundled, id: \.id) { portal in
+                Toggle(isOn: Binding(
+                    get: { model.config.search.enabledPortals.contains(portal.id) },
+                    set: { on in
+                        model.saveConfig { config in
+                            if on { config.search.enabledPortals.insert(portal.id) }
+                            else { config.search.enabledPortals.remove(portal.id) }
+                        }
+                    }
+                )) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(portal.name)
+                        if let note = portal.attribution {
+                            Text(note)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+        } header: {
+            Eyebrow(text: "Job portals")
+        } footer: {
+            Text("Free remote-job boards, off until you turn them on. Jobsmith only reads the listed board, over https, and fetches no more often than the board's terms ask.")
+        }
     }
 
     private func split(_ text: String) -> [String] {

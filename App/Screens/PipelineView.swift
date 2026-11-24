@@ -283,6 +283,7 @@ struct JobRowView: View {
         let source = SourceCatalog.displayName(for: job.source)
         var parts = ["\(job.title) at \(job.company.isEmpty ? source : job.company)"]
         parts.append(job.fitScore.map { "fit \(Int($0)) of 100" } ?? "not scored yet")
+        if let coverage = job.requirementCoverage { parts.append(coverage.summary) }
         if job.isRemote { parts.append("remote") }
         if !job.company.isEmpty { parts.append("from \(source)") }
         return parts.joined(separator: ", ")
@@ -305,6 +306,7 @@ struct JobRowView: View {
                 .foregroundStyle(.secondary)
             }
             Spacer()
+            CoverageBadge(coverage: job.requirementCoverage)
             HeatChip(score: job.fitScore)
         }
         .padding(.vertical, 2)

@@ -65,7 +65,8 @@ final class PromptRegistryTests: XCTestCase {
         var config = AppConfig()
         config.promptOverrides["score_job_fit"] = "OVERRIDE {job_title}!"
         let out = PromptRegistry.render("score_job_fit", ["job_title": "Dev"], config: config)
-        XCTAssertEqual(out, "OVERRIDE Dev!")
+        // The posting guard is added in code, so an override can't drop it.
+        XCTAssertEqual(out, PromptRegistry.untrustedPostingGuard + "\n\nOVERRIDE Dev!")
     }
 
     func testBlankOverrideIgnored() {
@@ -225,7 +226,7 @@ final class ScoringServiceTests: XCTestCase {
         XCTAssertEqual(report?["matched_skills"] as? [String], ["Swift", "iOS"])
         XCTAssertEqual(report?["title_alignment"] as? String, "strong")
         XCTAssertEqual(mock.requests.count, 1)
-        XCTAssertEqual(mock.requests[0].maxTokens, 1200)
+        XCTAssertEqual(mock.requests[0].maxTokens, 1800)
         XCTAssertEqual(mock.requests[0].tier, .fast)
     }
 

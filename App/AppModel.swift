@@ -312,11 +312,19 @@ final class AppModel {
         do {
             _ = try await SyncManager.shared.syncNow(
                 db: database, configStore: configStore, deviceLabel: UIDevice.current.name)
-            refresh()
+            await reloadAfterSync()
             return true
         } catch {
             return false
         }
+    }
+
+    /// Pick up what a sync wrote. Sync saves the profile and settings to the
+    /// config store on disk; without this, screens keep the stale in-memory copy
+    /// (and the profile editor would later save it back over the synced one).
+    func reloadAfterSync() async {
+        config = await configStore.load()
+        refresh()
     }
 
     /// Foreground auto-sync: an immediate catch-up cycle, then one every
@@ -729,8 +737,9 @@ final class AppModel {
         }
         activityStore.log("handoff_requested", "Asked the desktop to finish scoring")
         Task {
-            try? await SyncManager.shared.syncNow(db: database, configStore: configStore,
-                                                  deviceLabel: UIDevice.current.name)
+            _ = try? await SyncManager.shared.syncNow(db: database, configStore: configStore,
+                                                      deviceLabel: UIDevice.current.name)
+            await reloadAfterSync()
         }
     }
 

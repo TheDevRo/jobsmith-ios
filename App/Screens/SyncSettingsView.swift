@@ -170,8 +170,11 @@ struct SyncSettingsView: View {
                 db: model.database,
                 configStore: model.configStore,
                 deviceLabel: UIDevice.current.name)
-            status = "Received \(r.imported.upserts) update(s), \(r.imported.deletes) deletion(s); "
-                + "sent \(r.exported.live + r.exported.tombstones) change(s)."
+            await model.reloadAfterSync()
+            var line = "Received \(r.imported.upserts) update(s), \(r.imported.deletes) deletion(s); "
+            line += "sent \(r.exported.live + r.exported.tombstones) change(s)."
+            if r.imported.profileUpdated { line += " Profile updated from the folder." }
+            status = line
         } catch {
             status = "Sync failed: \(error.localizedDescription)"
         }

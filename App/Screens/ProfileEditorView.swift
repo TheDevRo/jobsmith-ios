@@ -11,6 +11,10 @@ struct ProfileEditorView: View {
     /// instance can still fire `onDisappear` — which would save its empty
     /// `Profile()` over the real one. Only an instance that appeared may save.
     @State private var hasAppeared = false
+    /// The profile as last loaded from config. Leaving the screen saves only
+    /// when the user actually changed something, so an untouched editor can't
+    /// write a stale copy over a profile that arrived by sync.
+    @State private var loaded: Profile?
 
     var body: some View {
         Form {
@@ -170,9 +174,18 @@ struct ProfileEditorView: View {
             if profile.isEmpty {
                 profile = model.config.profile
                 skillsText = profile.skills.joined(separator: ", ")
+                loaded = profile
             }
         }
         .onChange(of: model.config.profile) { _, newValue in
+            // A sync replaced the profile while this screen was open and the
+            // user hasn't edited yet: show the new one.
+            if let loaded, edited() == loaded {
+                profile = newValue
+                skillsText = newValue.skills.joined(separator: ", ")
+                self.loaded = newValue
+                return
+            }
             // The config can land after we appeared (async load at launch,
             // an import finishing). Adopt it only while our snapshot is
             // still empty — never stomp live edits, and never let the
@@ -181,17 +194,25 @@ struct ProfileEditorView: View {
             if profile.isEmpty {
                 profile = newValue
                 skillsText = newValue.skills.joined(separator: ", ")
+                loaded = newValue
             }
         }
         .onDisappear {
             guard hasAppeared else { return }
-            var updated = profile
-            updated.skills = skillsText.split(separator: ",")
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { !$0.isEmpty }
-            let final = updated
+            let final = edited()
+            guard final != loaded else { return }   // untouched: don't write
             model.saveConfig { $0.profile = final }
+            loaded = final
         }
+    }
+
+    /// The profile as it would be saved: the form state plus the skills text.
+    private func edited() -> Profile {
+        var updated = profile
+        updated.skills = skillsText.split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        return updated
     }
 }
 

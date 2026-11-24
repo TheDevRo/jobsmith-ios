@@ -294,6 +294,68 @@ public struct JobStore: Sendable {
         }
     }
 
+    /// Inbox jobs the Flush action may remove: untriaged (triage='new'), no
+    /// application row (that also covers application events and facts, which
+    /// hang off it), no requirement marked dismissed in the coverage JSON, and —
+    /// when `cutoff` is set — discovered before it. Anything shortlisted,
+    /// passed, applied, or in Recently Deleted is never a candidate. A job whose
+    /// discovery date can't be parsed is kept when a cutoff is given.
+    private static func flushable(_ dbc: Database, olderThan cutoff: Date?) throws -> [Job] {
+        let candidates = try Job.fetchAll(dbc, sql: """
+            SELECT * FROM jobs
+            WHERE triage = 'new'
+              AND NOT EXISTS (SELECT 1 FROM applications WHERE applications.jobId = jobs.id)
+            """)
+        return candidates.filter { job in
+            if let coverage = RequirementCoverage.decode(job.coverage),
+               coverage.requirements.contains(where: { $0.dismissed == true }) {
+                return false
+            }
+            guard let cutoff else { return true }
+            guard let discovered = parseDiscovered(job.dateDiscovered) else { return false }
+            return discovered < cutoff
+        }
+    }
+
+    private static func parseDiscovered(_ value: String) -> Date? {
+        let plain = ISO8601DateFormatter()
+        if let date = plain.date(from: value) { return date }
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = fractional.date(from: value) { return date }
+        // Jobs synced from the desktop keep its stamps: SQLite's "2026-11-24 22:00:00"
+        // or Python's "2026-11-24T22:00:00.123456+00:00", both UTC. The age filter only
+        // needs the day, so read the first 19 characters as UTC.
+        let head = String(value.prefix(19)).replacingOccurrences(of: " ", with: "T")
+        let utc = DateFormatter()
+        utc.locale = Locale(identifier: "en_US_POSIX")
+        utc.timeZone = TimeZone(identifier: "UTC")
+        utc.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        return utc.date(from: head)
+    }
+
+    /// How many jobs `flushInbox(olderThan:)` would remove right now.
+    public func flushableCount(olderThan cutoff: Date?) throws -> Int {
+        try db.writer.read { try Self.flushable($0, olderThan: cutoff).count }
+    }
+
+    /// Flush the inbox: hard-delete stale undecided jobs (see `flushable`),
+    /// exactly like `purgeDeleted` — application rows first, then the job rows,
+    /// in one transaction. The vanished rows export as `job` tombstones so peers
+    /// drop them too, and a later fetch of the same (source, externalId) inserts
+    /// fresh, since nothing remembers a hard-deleted job. Returns the count.
+    @discardableResult
+    public func flushInbox(olderThan cutoff: Date?) throws -> Int {
+        try db.writer.write { dbc in
+            let ids = try Self.flushable(dbc, olderThan: cutoff).map(\.id)
+            for id in ids {
+                try dbc.execute(sql: "DELETE FROM applications WHERE jobId = ?", arguments: [id])
+                try dbc.execute(sql: "DELETE FROM jobs WHERE id = ?", arguments: [id])
+            }
+            return ids.count
+        }
+    }
+
     public struct Stats: Sendable, Equatable {
         public var totalJobs = 0
         public var newInInbox = 0

@@ -13,6 +13,7 @@ struct InboxView: View {
     @State private var pastedURL = ""
     @State private var showScoreAllConfirm = false
     @State private var showDeleteAllConfirm = false
+    @State private var showFlush = false
     @State private var searchQuery = ""
     @State private var showSearch = false
     /// Empty = all boards. Non-empty restricts the deck to those source slugs.
@@ -127,6 +128,7 @@ struct InboxView: View {
                 JobDetailView(jobId: jobId)
             }
             .toolbar { toolbarContent }
+            .sheet(isPresented: $showFlush) { FlushInboxSheet() }
             .alert("Add job by URL", isPresented: $showAddByURL) {
                 TextField("https://…", text: $pastedURL)
                     .textInputAutocapitalization(.never)
@@ -227,6 +229,12 @@ struct InboxView: View {
             }
             .disabled(unscoredCount == 0 || model.isScoringAll)
             Divider()
+            Button {
+                showFlush = true
+            } label: {
+                Label("Flush inbox…", systemImage: "wind")
+            }
+            .disabled(model.inbox.isEmpty)
             Button(role: .destructive) {
                 showDeleteAllConfirm = true
             } label: {

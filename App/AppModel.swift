@@ -1207,6 +1207,20 @@ final class AppModel {
         refresh()
     }
 
+    /// Flush stale undecided Inbox jobs (hard delete, see `JobStore.flushInbox`),
+    /// then sync so the tombstones reach the desktop promptly. Hard deletes, so
+    /// pending undos are dropped like in `emptyRecycleBin`. Returns the count.
+    @discardableResult
+    func flushInbox(olderThan cutoff: Date?) -> Int {
+        let count = (try? jobStore.flushInbox(olderThan: cutoff)) ?? 0
+        guard count > 0 else { return 0 }
+        activityStore.log("deleted", "Flushed \(count) inbox posting\(count == 1 ? "" : "s")")
+        undoStack.clear()
+        refresh()
+        Task { await syncNow() }
+        return count
+    }
+
     /// Clear every tracked posting and its tailored documents, plus the fetch
     /// caches — but keep the profile, settings, and answer bank. "Start the
     /// job list over" without a full reset.

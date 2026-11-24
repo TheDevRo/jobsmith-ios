@@ -150,12 +150,20 @@ struct DebertaTokenizer: Sendable {
         init?(_ data: Data) {
             let bytes = [UInt8](data)
             guard bytes.count >= 4 else { return nil }
-            let size = Int(UInt32(bytes[0]) | UInt32(bytes[1]) << 8 | UInt32(bytes[2]) << 16 | UInt32(bytes[3]) << 24)
+            let size = Int(Self.le32(bytes, 0))
             guard size % 4 == 0, 4 + size <= bytes.count else { return nil }
-            trie = stride(from: 4, to: 4 + size, by: 4).map {
-                UInt32(bytes[$0]) | UInt32(bytes[$0 + 1]) << 8 | UInt32(bytes[$0 + 2]) << 16 | UInt32(bytes[$0 + 3]) << 24
-            }
+            trie = stride(from: 4, to: 4 + size, by: 4).map { (i: Int) -> UInt32 in Self.le32(bytes, i) }
             pool = Array(bytes[(4 + size)...])
+        }
+
+        /// Little-endian UInt32 at `i`. Split into typed steps: as one expression,
+        /// the Release-build type checker gives up on it.
+        private static func le32(_ b: [UInt8], _ i: Int) -> UInt32 {
+            let b0: UInt32 = UInt32(b[i])
+            let b1: UInt32 = UInt32(b[i + 1]) << 8
+            let b2: UInt32 = UInt32(b[i + 2]) << 16
+            let b3: UInt32 = UInt32(b[i + 3]) << 24
+            return b0 | b1 | b2 | b3
         }
 
         /// The replacement for the shortest trie key that prefixes `chunk` (HF `transform`).

@@ -10,13 +10,13 @@ final class SourceRegistryTests: XCTestCase {
 
     func testEstimatedDurationIsTheSlowestEnabledSource() {
         // Sources run in parallel, so the estimate is the single slowest budget.
-        // remoteok = 60s, greenhouse = 300s → 300s.
-        let estimate = SourceRegistry.estimatedDuration(for: ["remoteok", "greenhouse"])
+        // arbeitnow = 60s, greenhouse = 300s → 300s.
+        let estimate = SourceRegistry.estimatedDuration(for: ["arbeitnow", "greenhouse"])
         XCTAssertEqual(estimate, .seconds(300))
     }
 
     func testEstimatedDurationIgnoresUnknownSources() {
-        let estimate = SourceRegistry.estimatedDuration(for: ["remoteok", "bogus"])
+        let estimate = SourceRegistry.estimatedDuration(for: ["arbeitnow", "bogus"])
         XCTAssertEqual(estimate, .seconds(60))
     }
 
@@ -29,9 +29,9 @@ final class SourceRegistryTests: XCTestCase {
 
     func testEnabledIDsRequireMembershipForOrdinarySources() {
         var config = AppConfig()
-        config.search.enabledSources = ["remoteok"]
+        config.search.enabledSources = ["arbeitnow"]
         config.search.linkedInEnabled = false
-        XCTAssertEqual(SourceRegistry.enabledIDs(for: config), ["remoteok"])
+        XCTAssertEqual(SourceRegistry.enabledIDs(for: config), ["arbeitnow"])
     }
 
     func testLinkedInEnabledByFlagAloneAfterSyncStripsMembership() {

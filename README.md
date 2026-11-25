@@ -13,7 +13,7 @@ Apple's on-device foundation model for the lighter tasks.
 
 | Desktop capability | Standalone iOS |
 |---|---|
-| Job sources | All pure-HTTP sources ported natively: RemoteOK, WeWorkRemotely, Arbeitnow, Greenhouse, Lever, Ashby, Workable, Recruitee, Adzuna, USAJobs, plus the LinkedIn guest scraper (throttled) and paste-a-URL/JSON-LD generic parsing. **Indeed is out** — it needs a real browser + Cloudflare solver. |
+| Job sources | All pure-HTTP sources ported natively: Arbeitnow, Greenhouse, Lever, Ashby, Workable, Recruitee, Adzuna, USAJobs, plus the LinkedIn guest scraper (throttled) and paste-a-URL/JSON-LD generic parsing. **Indeed is out** — it needs a real browser + Cloudflare solver. |
 | Scoring / tailoring / AI Edit / honesty levels | Full port — same 17 prompt templates, same honesty/tone directives, same lenient JSON salvage. |
 | DOCX resume + cover letter | Native OOXML writer, same three style presets (standard/minimal/modern), same layout. |
 | Apply Assist | An **in-app Apply browser** (WKWebView) opens the posting inside Jobsmith, injects the same `snapshot.js`/`fill.js` scripts, and runs the LLM field-mapper **in-process** — no Safari extension, no native messaging, no per-site permission. A fallback panel offers tap-to-copy answers and one-tap document export for anything the injector can't set. |

@@ -17,7 +17,7 @@ final class EndToEndWalkthroughTests: XCTestCase {
         snap(app, "1-inbox-deck")
 
         if ProcessInfo.processInfo.environment["E2E_LIVE_FETCH"] == "1" {
-            // Real fetch from the default sources (RemoteOK, WWR, Arbeitnow).
+            // Real fetch from the default sources (Arbeitnow, Greenhouse).
             app.buttons["Fetch jobs"].tap()
             for _ in 0..<60 {
                 dismissErrorAlert(app)

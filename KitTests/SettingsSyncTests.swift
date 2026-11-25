@@ -35,11 +35,11 @@ final class SettingsSyncTests: XCTestCase {
 
     func testEnabledSourcesFoldIsSortedAndLinkedInFolds() {
         let config: [String: JSONValue] = ["search": .object([
-            "enabledSources": .array([.string("remoteok"), .string("greenhouse")]),
+            "enabledSources": .array([.string("arbeitnow"), .string("greenhouse")]),
             "linkedInEnabled": .bool(true),
         ])]
         let folded = SettingsSync.foldEnabledSources(config)
-        XCTAssertEqual(folded, ["greenhouse", "linkedin", "remoteok"])  // sorted, linkedin folded in
+        XCTAssertEqual(folded, ["arbeitnow", "greenhouse", "linkedin"])  // sorted, linkedin folded in
 
         var dest: [String: JSONValue] = [:]
         SettingsSync.apply(&dest, path: "search.enabled_sources",

@@ -131,9 +131,9 @@ final class PortalValidationTests: XCTestCase {
         try write("extra.json", Self.good { $0["id"] = "extra"; $0["surprise"] = true })
         try write("fine.json", Self.good { $0["id"] = "fine" })
         try write("zdupe.json", Self.good { $0["id"] = "fine"; $0["name"] = "Second" })
-        try write("reserved.json", Self.good { $0["id"] = "remoteok" })
+        try write("reserved.json", Self.good { $0["id"] = "arbeitnow" })
         try write("big.json", Self.good { $0["name"] = String(repeating: "x", count: Portal.maxFileBytes + 1) })
-        let loaded = PortalCatalog.load(from: dir, reserved: ["remoteok"])
+        let loaded = PortalCatalog.load(from: dir, reserved: ["arbeitnow"])
         XCTAssertEqual(loaded.map(\.id), ["fine"])
         XCTAssertEqual(loaded.first?.name, "Demo", "the first file for an id wins")
     }

@@ -149,36 +149,6 @@ final class SourceParsingTests: XCTestCase {
         XCTAssertEqual(payroll.location, "Rotterdam, Netherlands")
     }
 
-    func testRemoteOKParsing() throws {
-        let jobs = try RemoteOKSource.parse(
-            body: try Fixtures.data("remoteok", "json"),
-            keywords: ["ios", "marketing"], excludePatterns: noExcludes)
-        // Metadata element [0] is skipped.
-        XCTAssertEqual(jobs.count, 2)
-
-        let ios = jobs[0]
-        XCTAssertEqual(ios.externalId, "1093221")
-        XCTAssertEqual(ios.title, "iOS Engineer")
-        // Direct apply link preferred over the RemoteOK page.
-        XCTAssertEqual(ios.url, "https://acme.com/careers/ios")
-        XCTAssertEqual(ios.location, "Worldwide")
-        XCTAssertEqual(ios.salaryMin, 90_000)
-        XCTAssertEqual(ios.salaryPeriod, "annual")
-        XCTAssertTrue(ios.isRemote)
-        XCTAssertEqual(ios.tags, ["swift", "ios", "mobile"])
-
-        // Empty apply_url falls back to the listing URL.
-        XCTAssertEqual(jobs[1].url, "https://remoteok.com/remote-jobs/1093222")
-    }
-
-    func testRemoteOKHTMLBodyThrowsBlocked() {
-        let html = Data("<!doctype html>\n<HTML><body>Access denied</body></HTML>".utf8)
-        XCTAssertThrowsError(try RemoteOKSource.parse(body: html, keywords: ["ios"],
-                                                      excludePatterns: [])) {
-            XCTAssertTrue($0 is SourceBlockedError)
-        }
-    }
-
     func testArbeitnowParsing() throws {
         var seen = Set<String>()
         let page = try ArbeitnowSource.parsePage(
@@ -243,34 +213,6 @@ final class SourceParsingTests: XCTestCase {
         XCTAssertNil(cisa.salaryMax)
         XCTAssertEqual(cisa.description, "Defend federal networks.")
         XCTAssertTrue(cisa.isRemote)
-    }
-
-    func testWeWorkRemotelyFeedParsing() throws {
-        let items = WeWorkRemotelySource.parseFeed(try Fixtures.data("wwr.rss", "xml"))
-        XCTAssertEqual(items.count, 3)
-        XCTAssertEqual(items[0].title, "Acme Corp: Senior Rails Developer")
-        XCTAssertEqual(items[0].link,
-                       "https://weworkremotely.com/remote-jobs/acme-corp-senior-rails-developer")
-        XCTAssertEqual(items[0].pubDate, "Wed, 01 Jul 2026 10:00:00 +0000")
-        XCTAssertTrue(items[0].description.contains("Rails monolith"))
-
-        var seenLinks = Set<String>()
-        let jobs = WeWorkRemotelySource.buildJobs(items: items, keywords: ["rails"],
-                                                  excludePatterns: [], seenLinks: &seenLinks)
-        XCTAssertEqual(jobs.count, 2)
-        XCTAssertEqual(jobs[0].title, "Senior Rails Developer")
-        XCTAssertEqual(jobs[0].company, "Acme Corp")
-        XCTAssertEqual(jobs[0].location, "Remote")
-        XCTAssertTrue(jobs[0].isRemote)
-        XCTAssertNotNil(JobFilters.parsePostedDate(jobs[0].datePosted))
-        // No-colon titles keep the full title and an empty company.
-        XCTAssertEqual(jobs[1].title, "Untitled Posting Without Company")
-        XCTAssertEqual(jobs[1].company, "")
-
-        // The superset feed re-serves the same links — dedup swallows them.
-        let again = WeWorkRemotelySource.buildJobs(items: items, keywords: ["rails"],
-                                                   excludePatterns: [], seenLinks: &seenLinks)
-        XCTAssertTrue(again.isEmpty)
     }
 }
 
@@ -389,9 +331,10 @@ final class JobFiltersTests: XCTestCase {
         XCTAssertTrue(JobFilters.passesGlobalFilters(job(isRemote: true), search: search))
         XCTAssertTrue(JobFilters.passesGlobalFilters(
             job(location: "Remote - US"), search: search))
-        // RemoteOK/WWR jobs always pass the location filter.
-        XCTAssertTrue(JobFilters.passesGlobalFilters(
-            job(location: "Worldwide", source: "remoteok"), search: search))
+        // No source gets a free pass: a "Worldwide" job outside the configured
+        // locations is filtered like any other.
+        XCTAssertFalse(JobFilters.passesGlobalFilters(
+            job(location: "Worldwide", source: "arbeitnow"), search: search))
 
         // Empty location from a server-side-location source (queried per
         // configured location) is trusted and passes...
@@ -703,7 +646,7 @@ final class FetchPipelineTests: XCTestCase {
 
     func testRegistryCoversPortedSources() {
         XCTAssertEqual(SourceRegistry.allIDs,
-                       ["remoteok", "weworkremotely", "adzuna", "greenhouse",
+                       ["adzuna", "greenhouse",
                         "linkedin", "arbeitnow", "usajobs", "ashby", "workable",
                         "recruitee"])
         for id in SourceRegistry.allIDs {

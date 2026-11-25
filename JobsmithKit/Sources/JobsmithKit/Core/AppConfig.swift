@@ -106,7 +106,7 @@ public struct SearchConfig: Codable, Equatable, Sendable {
                 greenhouseBoards: [String] = [], leverCompanies: [String] = [],
                 ashbyBoards: [String] = [], workableAccounts: [String] = [],
                 recruiteeCompanies: [String] = [],
-                enabledSources: Set<String> = ["remoteok", "weworkremotely", "arbeitnow", "greenhouse"],
+                enabledSources: Set<String> = ["arbeitnow", "greenhouse"],
                 linkedInEnabled: Bool = false,
                 enabledPortals: Set<String> = []) {
         self.keywords = keywords; self.locations = locations

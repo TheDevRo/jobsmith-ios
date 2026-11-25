@@ -23,7 +23,7 @@ enum BackgroundScheduler {
 
     /// Sources cheap enough for a BGAppRefreshTask window: one HTTP request
     /// each, no per-board fan-out, no credentials.
-    static let refreshSources = ["remoteok", "weworkremotely", "arbeitnow"]
+    static let refreshSources = ["arbeitnow"]
 
     /// Everything the refresh tier can't finish in ~30s. Runs in the processing
     /// tier, which iOS schedules sparingly but grants minutes for.

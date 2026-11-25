@@ -417,8 +417,7 @@ struct SearchSettingsView: View {
     /// switch also decides whether the source exists at all (`LinkedInFeature`)
     /// and because that's where the account connection belongs.
     private var sourceList: [(String, String)] {
-        [("remoteok", "RemoteOK"), ("weworkremotely", "WeWorkRemotely"),
-         ("arbeitnow", "Arbeitnow"), ("greenhouse", "Greenhouse & Lever boards"),
+        [("arbeitnow", "Arbeitnow"), ("greenhouse", "Greenhouse & Lever boards"),
          ("ashby", "Ashby boards"), ("workable", "Workable"),
          ("recruitee", "Recruitee"), ("adzuna", "Adzuna (API key)"),
          ("usajobs", "USAJobs (API key)")]

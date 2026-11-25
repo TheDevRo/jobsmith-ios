@@ -72,7 +72,7 @@ public enum JobFilters {
 
     /// Parse the heterogeneous date_posted formats sources emit: unix epochs
     /// (Arbeitnow; seconds or milliseconds), ISO 8601 with/without Z or zone,
-    /// and RFC 822 (WeWorkRemotely RSS). Returns nil when unparseable —
+    /// and RFC 822 (RSS feeds). Returns nil when unparseable —
     /// callers must treat nil as "unknown, let it through".
     public static func parsePostedDate(_ value: String) -> Date? {
         let s = value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -376,9 +376,6 @@ public enum JobFilters {
                 if clean.isEmpty || clean == "remote" { continue }
                 if jobLocation.contains(clean) { return true }
             }
-
-            // RemoteOK and WeWorkRemotely are inherently remote — always pass.
-            if job.source == "remoteok" || job.source == "weworkremotely" { return true }
 
             return false
         }

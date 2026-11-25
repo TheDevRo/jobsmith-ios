@@ -6,6 +6,7 @@ import Foundation
 /// everywhere. Unknown/empty slugs fall back to a capitalized best effort.
 public enum SourceCatalog {
     private static let displayNames: [String: String] = [
+        // Retired sources keep a name so jobs already saved from them still read well.
         "remoteok": "RemoteOK",
         "weworkremotely": "WeWorkRemotely",
         "arbeitnow": "Arbeitnow",

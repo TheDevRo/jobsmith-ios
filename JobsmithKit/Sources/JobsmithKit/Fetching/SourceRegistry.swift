@@ -4,8 +4,6 @@ import Foundation
 /// ported (needs a real browser + Cloudflare solver).
 public enum SourceRegistry {
     private static let all: [(id: String, make: @Sendable () -> any JobSource)] = [
-        (RemoteOKSource.id, { RemoteOKSource() }),
-        (WeWorkRemotelySource.id, { WeWorkRemotelySource() }),
         (AdzunaSource.id, { AdzunaSource() }),
         (GreenhouseSource.id, { GreenhouseSource() }),
         (LinkedInSource.id, { LinkedInSource() }),

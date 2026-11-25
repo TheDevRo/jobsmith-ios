@@ -2,7 +2,7 @@ import Foundation
 
 /// Shared HTTP layer for all job sources: one ephemeral session, the
 /// fetch-with-retries policy ported from Python `fetch_with_retries`, and the
-/// browser-like header preset RemoteOK / WeWorkRemotely / generic pages need.
+/// browser-like header preset some job boards and generic pages need.
 public enum HTTPClient {
     /// The session every source shares. A `var` only so tests can install a
     /// `URLProtocol` stub (a custom session snapshots its protocol classes at
